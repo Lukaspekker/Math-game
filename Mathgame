@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Teacher Game</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script>
+        let player, teachers, books;
+        let playerSpeed = 3;
+        let score = 0;
+        let gameStarted = false;
+
+        function setup() {
+            createCanvas(800, 600);
+            resetGame();
+        }
+
+        function draw() {
+            background(220);
+            
+            if (gameStarted) {
+                // Player actions
+                player.move();
+                player.display();
+
+                // Teachers
+                for (let teacher of teachers) {
+                    teacher.moveTowards(player.position);
+                    teacher.display();
+                    
+                    // Collision detection with player
+                    if (dist(player.position.x, player.position.y, teacher.position.x, teacher.position.y) < 30) {
+                        gameOver();
+                    }
+                }
+                
+                // Books
+                for (let i = books.length - 1; i >= 0; i--) {
+                    books[i].move();
+                    books[i].display();
+                    
+                    // Check for collision with teachers
+                    for (let j = teachers.length - 1; j >= 0; j--) {
+                        if (dist(books[i].position.x, books[i].position.y, teachers[j].position.x, teachers[j].position.y) < 20) {
+                            teachers.splice(j, 1); // Remove teacher
+                            books.splice(i, 1); // Remove book
+                            score++;
+                            teachers.push(new Teacher()); // Add new teacher
+                            break;
+                        }
+                    }
+                }
+
+                // Display score
+                fill(0);
+                textSize(16);
+                text('Score: ' + score, 10, 20);
+            } else {
+                // Display start screen
+                fill(0);
+                textSize(32);
+                textAlign(CENTER);
+                text('Drücke Enter, um zu starten', width / 2, height / 2);
+            }
+        }
+
+        // Player class
+        class Player {
+            constructor() {
+                this.position = createVector(width / 2, height - 50);
+                this.direction = createVector(1, 0);
+            }
+            
+            move() {
+                if (keyIsDown(87)) this.position.y -= playerSpeed; // W
+                if (keyIsDown(83)) this.position.y += playerSpeed; // S
+                if (keyIsDown(65)) this.position.x -= playerSpeed; // A
+                if (keyIsDown(68)) this.position.x += playerSpeed; // D
+                
+                if (keyIsDown(UP_ARROW)) this.direction.set(0, -1); // Look up
+                if (keyIsDown(DOWN_ARROW)) this.direction.set(0, 1); // Look down
+                if (keyIsDown(LEFT_ARROW)) this.direction.set(-1, 0); // Look left
+                if (keyIsDown(RIGHT_ARROW)) this.direction.set(1, 0); // Look right
+            }
+            
+            display() {
+                stroke(0);
+                strokeWeight(2);
+                fill(0, 0, 255);
+                // Draw the stick figure (player)
+                line(this.position.x, this.position.y, this.position.x, this.position.y - 30); // body
+                line(this.position.x, this.position.y - 30, this.position.x - 10, this.position.y - 50); // left arm
+                line(this.position.x, this.position.y - 30, this.position.x + 10, this.position.y - 50); // right arm
+                line(this.position.x, this.position.y, this.position.x - 10, this.position.y + 10); // left leg
+                line(this.position.x, this.position.y, this.position.x + 10, this.position.y + 10); // right leg
+                
+                // Head
+                fill(255);
+                ellipse(this.position.x, this.position.y - 35, 20, 20); // head
+                fill(0);
+                ellipse(this.position.x - 5, this.position.y - 35, 5, 5); // left eye
+                ellipse(this.position.x + 5, this.position.y - 35, 5, 5); // right eye
+                arc(this.position.x, this.position.y - 30, 15, 10, 0, PI); // mouth
+            }
+        }
+
+        // Teacher class
+        class Teacher {
+            constructor() {
+                this.position = createVector(random(width), random(height / 2));
+            }
+            
+            moveTowards(target) {
+                let step = p5.Vector.sub(target, this.position);
+                step.setMag(1.5);
+                this.position.add(step);
+            }
+            
+            display() {
+                stroke(255, 0, 0);
+                strokeWeight(2);
+                // Draw the stick figure (teacher)
+                line(this.position.x, this.position.y, this.position.x, this.position.y - 30); // body
+                line(this.position.x, this.position.y - 30, this.position.x - 10, this.position.y - 50); // left arm
+                line(this.position.x, this.position.y - 30, this.position.x + 10, this.position.y - 50); // right arm
+                line(this.position.x, this.position.y, this.position.x - 10, this.position.y + 10); // left leg
+                line(this.position.x, this.position.y, this.position.x + 10, this.position.y + 10); // right leg
+                
+                // Head
+                fill(255, 0, 0);
+                ellipse(this.position.x, this.position.y - 35, 20, 20); // head
+                fill(0);
+                ellipse(this.position.x - 5, this.position.y - 35, 5, 5); // left eye
+                ellipse(this.position.x + 5, this.position.y - 35, 5, 5); // right eye
+                arc(this.position.x, this.position.y - 30, 15, 10, 0, PI); // mouth
+            }
+        }
+
+        // Book class
+        class Book {
+            constructor(x, y) {
+                this.position = createVector(x, y);
+            }
+            
+            move() {
+                // Books don't need to move; they disappear upon collision
+            }
+            
+            display() {
+                fill(0, 255, 0);
+                rect(this.position.x, this.position.y, 10, 10);
+                fill(0);
+                textSize(8);
+                text('Mathe', this.position.x + 2, this.position.y + 8); // label on the book
+            }
+        }
+
+        // Start the game
+        function keyPressed() {
+            if (key === 'h' || key === 'H') {
+                books.push(new Book(player.position.x, player.position.y)); // Add book at player's position
+            }
+            if (keyCode === ENTER) {
+                gameStarted = !gameStarted; // Toggle game state
+                if (gameStarted) {
+                    resetGame(); // Reset the game
+                }
+            }
+        }
+
+        // Game over
+        function gameOver() {
+            noLoop();
+            fill(0);
+            textSize(32);
+            textAlign(CENTER);
+            text('Game Over!', width / 2, height / 2);
+            text('Drücke Enter, um neu zu starten', width / 2, height / 2 + 40);
+        }
+
+        // Reset game
+        function resetGame() {
+            player = new Player();
+            teachers = [new Teacher()];
+            books = [];
+            score = 0;
+            gameStarted = true;
+            loop();
+        }
+    </script>
+</body>
+</html>
